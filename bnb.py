@@ -21,44 +21,37 @@ def calcular_combustivel(distancia, carga_atual):
     return combustivel_gasto
 
 def calcular_rota_otima(lojas, capacidade_caminhao):
-    # inicialização das variaveis de rota otima e combustivel da rota ótima
-    menor_combustivel_total = float('inf') 
+    menor_combustivel_total = float('inf')
     rota_otima = None
 
-    # biblioteca usada para gerar combinações entre todos os caminhos possiveis passando 1x por cada loja, 
-    # evidentemente como se trata de um método força bruta nem todos serão válidos ou satisfatórios
-    perm_lojas = itertools.permutations(lojas[1:])
+    def backtrack_rota(rota_atual, cargas, combustivel_total):
+        nonlocal menor_combustivel_total, rota_otima
 
-    # itera cada um dos casos gerados na permutação
-    for perm in perm_lojas:
-        rota = [lojas[0]] + list(perm) + [lojas[0]]
-        combustivel_total = 0
-        cargas = set()
+        if len(cargas) > capacidade_caminhao:
+            return
 
-        # itera cara um dos passos do caso gerado
-        for i in range(len(rota) - 1):
-            atual = rota[i]
-            proximo = rota[i + 1]
-            distancia = calcular_distancia(atual, proximo)
+        if len(rota_atual) == len(lojas):
+            if combustivel_total < menor_combustivel_total:
+                menor_combustivel_total = combustivel_total
+                rota_otima = rota_atual
+            return
 
-            #variavel vai acumulando o combustivel gasto a cada passo da jornada
-            combustivel_total += calcular_combustivel(distancia, len(cargas))
-            
-            # caso tenha alguma entrega no proximo destino, devemos removê-la do set de cargas
-            if proximo.numero in cargas:
-                cargas.remove(proximo.numero)
-            cargas.update(proximo.destinos)
-            
-            # caso esse caminho ocasione na ultrapassagem do limite de carga, ele é invalido, portanto acabamos a iteração por aqui
-            if len(cargas) > capacidade_caminhao:
-                break
-            
-            # no penultimo elemento, antes da volta a 0, caso todos pacotes tenham sido entregados, esse caminho é válido e satisfatório
-            if i == len(rota) - 2 and len(cargas) == 0:
-                # registrado o caminho como mais eficiente, caso ele seja satisfatório, válido e gaste menos combustível
-                if combustivel_total < menor_combustivel_total:
-                    menor_combustivel_total = combustivel_total
-                    rota_otima = rota
+        for proximo in lojas[1:]:
+            if proximo not in rota_atual:
+                distancia = calcular_distancia(rota_atual[-1], proximo)
+                novo_combustivel_total = combustivel_total + calcular_combustivel(distancia, len(cargas))
+                novo_cargas = cargas.copy()
+
+                if proximo.numero in novo_cargas:
+                    novo_cargas.remove(proximo.numero)
+                novo_cargas.update(proximo.destinos)
+
+                backtrack_rota(rota_atual + [proximo], novo_cargas, novo_combustivel_total)
+
+    backtrack_rota([lojas[0]], set(), 0)
+    rota_otima.append(lojas[0])
+    menor_combustivel_total += calcular_combustivel(calcular_distancia(rota_otima[-2], lojas[0]), 0)
+
 
     return rota_otima, menor_combustivel_total
 
@@ -117,6 +110,7 @@ def main():
         print("Não foi encontrada uma rota que satisfaça as condições")
         end = time.time()
         print("Tempo de execução: " + str(end - start))
+
 
 
 if __name__ == '__main__':
