@@ -89,7 +89,7 @@ def ler_lojas_do_arquivo(arquivo):
 
 def main():
     arquivo_lojas = 'lojas.txt'
-    capacidade_caminhao = 3
+    capacidade_caminhao = int(input())
 
     lojas = ler_lojas_do_arquivo(arquivo_lojas)
     rota_otima, combustivel_total = calcular_rota_otima(lojas, capacidade_caminhao)
@@ -103,11 +103,13 @@ def main():
             loja_atual = rota_otima[i]
             loja_proxima = rota_otima[i + 1]
             distancia = calcular_distancia(loja_atual, loja_proxima)
-            carga_atual = capacidade_caminhao - len(loja_proxima.destinos)
+            carga_atual = len(loja_proxima.destinos)
             combustivel_trecho = calcular_combustivel(distancia, carga_atual)
-            print(f'De loja {loja_atual.numero} para loja {loja_proxima.numero}: {combustivel_trecho:.2f} litros')
+            print(f'De loja {loja_atual.numero} para loja {loja_proxima.numero}: {combustivel_trecho:.5f} litros')
 
         exibir_animacao(rota_otima)
+    else:
+        print("Não foi encontrada uma rota que satisfaça as condições")
 
 if __name__ == '__main__':
     main()
