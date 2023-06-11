@@ -1,6 +1,6 @@
-import itertools
 import math
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 import time
 
 class Loja:
@@ -21,61 +21,77 @@ def calcular_combustivel(distancia, carga_atual):
     return combustivel_gasto
 
 def calcular_rota_otima(lojas, capacidade_caminhao):
-    # inicialização das variaveis de rota otima e combustivel da rota ótima
-    menor_combustivel_total = float('inf') 
+    menor_combustivel_total = float('inf')
     rota_otima = None
 
-    # biblioteca usada para gerar combinações entre todos os caminhos possiveis passando 1x por cada loja, 
-    # evidentemente como se trata de um método força bruta nem todos serão válidos ou satisfatórios
-    perm_lojas = itertools.permutations(lojas[1:])
+    def permutate(current, remaining):
+        nonlocal menor_combustivel_total, rota_otima
 
-    # itera cada um dos casos gerados na permutação
-    for perm in perm_lojas:
-        rota = [lojas[0]] + list(perm) + [lojas[0]]
-        combustivel_total = 0
-        cargas = set()
+        if not remaining:
+            rota = current + [lojas[0]]
+            combustivel_total = 0
+            cargas = set()
 
-        # itera cara um dos passos do caso gerado
-        for i in range(len(rota) - 1):
-            atual = rota[i]
-            proximo = rota[i + 1]
-            distancia = calcular_distancia(atual, proximo)
+            for i in range(len(rota) - 1):
+                atual = rota[i]
+                proximo = rota[i + 1]
+                distancia = calcular_distancia(atual, proximo)
+                
 
-            #variavel vai acumulando o combustivel gasto a cada passo da jornada
-            combustivel_total += calcular_combustivel(distancia, len(cargas))
-            
-            # caso tenha alguma entrega no proximo destino, devemos removê-la do set de cargas
-            if proximo.numero in cargas:
-                cargas.remove(proximo.numero)
-            cargas.update(proximo.destinos)
-            
-            # caso esse caminho ocasione na ultrapassagem do limite de carga, ele é invalido, portanto acabamos a iteração por aqui
-            if len(cargas) > capacidade_caminhao:
-                break
-            
-            # no penultimo elemento, antes da volta a 0, caso todos pacotes tenham sido entregados, esse caminho é válido e satisfatório
-            if i == len(rota) - 2 and len(cargas) == 0:
-                # registrado o caminho como mais eficiente, caso ele seja satisfatório, válido e gaste menos combustível
-                if combustivel_total < menor_combustivel_total:
-                    menor_combustivel_total = combustivel_total
-                    rota_otima = rota
+                combustivel_total += calcular_combustivel(distancia, len(cargas))
+                
+                if proximo.numero in cargas:
+                    cargas.remove(proximo.numero)
+                cargas.update(proximo.destinos)
+                
+                if len(cargas) > capacidade_caminhao:
+                    break
+
+                if i == len(rota) - 2 and len(cargas) == 0:
+                    if combustivel_total < menor_combustivel_total:
+                        menor_combustivel_total = combustivel_total
+                        rota_otima = rota
+
+        else:
+            for i in range(len(remaining)):
+                permutate(current + [remaining[i]], remaining[:i] + remaining[i+1:])
+
+    permutate([lojas[0]], lojas[1:])
 
     return rota_otima, menor_combustivel_total
 
 def exibir_animacao(rota):
     x = [loja.x for loja in rota]
     y = [loja.y for loja in rota]
+    numeros = [loja.numero for loja in rota]  # Store numbers
 
     fig, ax = plt.subplots()
     ax.plot(x, y, 'bo-')
     ax.plot(x[0], y[0], 'go')  # Marcando a matriz (loja 0) em verde
     ax.set(xlabel='Coordenada X', ylabel='Coordenada Y', title='Rota do caminhão')
     ax.grid()
+
+    # Annotate store numbers on the graph
+    for i, num in enumerate(numeros):
+        ax.annotate(num, (x[i], y[i]), textcoords="offset points", xytext=(0,10), ha='center')
+
+    # Create truck marker
+    truck_marker = ax.plot([], [], 'r>', markersize=10)[0]
+
+    def update(frame):
+        truck_marker.set_data(x[frame], y[frame])
+        return truck_marker,
+
+    # Set up animation
+    anim = animation.FuncAnimation(fig, update, frames=len(x), interval=1000, repeat=False, blit=True)
+
     plt.show()
+
+
 
 def ler_lojas_do_arquivo(arquivo):
     lojas = []
-    with open(arquivo, 'r') as f: 
+    with open(arquivo, 'r') as f:
         for linha in f:
             valores = linha.split()
             numero = int(valores[0])
@@ -106,18 +122,13 @@ def main():
             loja_atual = rota_otima[i]
             loja_proxima = rota_otima[i + 1]
             distancia = calcular_distancia(loja_atual, loja_proxima)
-            carga_atual = len(loja_proxima.destinos)
+            carga_atual = capacidade_caminhao - len(loja_proxima.destinos)
             combustivel_trecho = calcular_combustivel(distancia, carga_atual)
             print(f'De loja {loja_atual.numero} para loja {loja_proxima.numero}: {combustivel_trecho:.5f} litros')
 
         end = time.time()
-        print("Tempo de execução: " + str(end - start)) 
-        exibir_animacao(rota_otima)
-    else:
-        print("Não foi encontrada uma rota que satisfaça as condições")
-        end = time.time()
         print("Tempo de execução: " + str(end - start))
-
+        exibir_animacao(rota_otima)
 
 if __name__ == '__main__':
     main()
