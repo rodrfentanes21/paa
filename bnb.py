@@ -107,7 +107,7 @@ def exibir_animacao(rota, combustivel):
 
         return truck_marker,
 
-    # Set up animation
+    # animaçao do ponteiro
     anim = animation.FuncAnimation(fig, update, frames=len(x), interval=1000, repeat=False, blit=True)
 
     plt.show()
