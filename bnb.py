@@ -84,7 +84,7 @@ def calcular_rota_otima(lojas, capacidade_caminhao):
 def exibir_animacao(rota, combustivel):
     x = [loja.x for loja in rota]
     y = [loja.y for loja in rota]
-    numeros = [loja.numero for loja in rota]  # Store numbers
+    numeros = [loja.numero for loja in rota]
 
     fig, ax = plt.subplots()
     ax.plot(x, y, 'bo-')
@@ -92,18 +92,15 @@ def exibir_animacao(rota, combustivel):
     ax.set(xlabel='Coordenada X', ylabel='Coordenada Y', title='Rota do caminhão')
     ax.grid()
 
-    # Annotate store numbers on the graph
     for i, num in enumerate(numeros):
         ax.annotate(num, (x[i], y[i]), textcoords="offset points", xytext=(0,10), ha='center')
 
-    # Create truck marker
     truck_marker = ax.plot([], [], 'r>', markersize=10)[0]
 
     def update(frame):
         truck_marker.set_data(x[frame], y[frame])
         return truck_marker,
 
-    # Set up animation
     anim = animation.FuncAnimation(fig, update, frames=len(x), interval=1000, repeat=False, blit=True)
 
     plt.title((f'Esta rota gasta {combustivel:.5f} Litros de combustível no total'))
