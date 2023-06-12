@@ -2,6 +2,7 @@ import math
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import time
+import numpy as np
 
 class Loja:
     def __init__(self, numero, x, y, destinos):
@@ -13,18 +14,18 @@ class Loja:
 def calcular_distancia(loja1, loja2):
     return math.sqrt((loja2.x - loja1.x) ** 2 + (loja2.y - loja1.y) ** 2)
 
-def calcular_combustivel(distancia, carga_atual):
+def calcular_combustivel(distancia, carga_atual): # calcula o combustivel gasto de um ponto A para um ponto B com base nas especificações do exercício
     rendimento_base = 10  # km/litro
     rendimento_por_produto = 0.5  # km/litro por produto
     rendimento_atual = rendimento_base - (carga_atual * rendimento_por_produto)
     combustivel_gasto = distancia / rendimento_atual
     return combustivel_gasto
 
-def calcular_rota_otima(lojas, capacidade_caminhao):
+def calcular_rota_otima(lojas, capacidade_caminhao): # função "core" do algoritmo
     menor_combustivel_total = float('inf')
     rota_otima = None
 
-    def permutate(current, remaining):
+    def permutate(current, remaining): # utiliza um approach de força bruta por meio de permutações realizadas de forma recursiva
         nonlocal menor_combustivel_total, rota_otima
 
         if not remaining:
@@ -40,15 +41,15 @@ def calcular_rota_otima(lojas, capacidade_caminhao):
 
                 combustivel_total += calcular_combustivel(distancia, len(cargas))
                 
-                if proximo.numero in cargas:
+                if proximo.numero in cargas: # remove a carga caso o caminhao passe pelo destino
                     cargas.remove(proximo.numero)
-                cargas.update(proximo.destinos)
+                cargas.update(proximo.destinos) # atualiza as cargas coletadas pelo caminhão no set
                 
-                if len(cargas) > capacidade_caminhao:
+                if len(cargas) > capacidade_caminhao: # se a capacidade foi excedida, desconnsidera a permutação
                     break
 
-                if i == len(rota) - 2 and len(cargas) == 0:
-                    if combustivel_total < menor_combustivel_total:
+                if i == len(rota) - 2 and len(cargas) == 0: # confere se está na ultima loja (antes do retorno a 0) e se não tem mais cargas para entregar 
+                    if combustivel_total < menor_combustivel_total: # guardas os valores referentes a rota, caso ela seja melhor que a rota ótima atualmente registrada
                         menor_combustivel_total = combustivel_total
                         rota_otima = rota
 
@@ -60,34 +61,37 @@ def calcular_rota_otima(lojas, capacidade_caminhao):
 
     return rota_otima, menor_combustivel_total
 
-def exibir_animacao(rota):
+def exibir_animacao(rota, combustivel):
     x = [loja.x for loja in rota]
     y = [loja.y for loja in rota]
-    numeros = [loja.numero for loja in rota]  # Store numbers
+    numeros = [loja.numero for loja in rota]
 
-    fig, ax = plt.subplots()
-    ax.plot(x, y, 'bo-')
-    ax.plot(x[0], y[0], 'go')  # Marcando a matriz (loja 0) em verde
-    ax.set(xlabel='Coordenada X', ylabel='Coordenada Y', title='Rota do caminhão')
-    ax.grid()
+    fig, (ax1, ax2) = plt.subplots(1, 2, gridspec_kw={'width_ratios': [4, 1]})
+    ax1.plot(x, y, 'bo-')
+    ax1.plot(x[0], y[0], 'go')
+    ax1.set(xlabel='Coordenada X', ylabel='Coordenada Y', title='Rota do caminhão')
+    ax1.grid()
 
-    # Annotate store numbers on the graph
     for i, num in enumerate(numeros):
-        ax.annotate(num, (x[i], y[i]), textcoords="offset points", xytext=(0,10), ha='center')
+        ax1.annotate(num, (x[i], y[i]), textcoords="offset points", xytext=(0,10), ha='center')
 
-    # Create truck marker
-    truck_marker = ax.plot([], [], 'r>', markersize=10)[0]
+    # Cria marcador do caminhão
+    truck_marker = ax1.plot([], [], 'r>', markersize=10)[0]
+
+    # Cria a barra lateral do combustível
+    ax2.set(xlim=(0, 1), ylim=(0, 200))
+    fuel_bar = ax2.barh([0], [combustivel], height=200)
+    fuel_bar_filled = ax2.barh([0], [0], height=1)
 
     def update(frame):
         truck_marker.set_data(x[frame], y[frame])
+
         return truck_marker,
 
-    # Set up animation
+    # animaçao do ponteiro
     anim = animation.FuncAnimation(fig, update, frames=len(x), interval=1000, repeat=False, blit=True)
 
     plt.show()
-
-
 
 def ler_lojas_do_arquivo(arquivo):
     lojas = []
@@ -118,17 +122,19 @@ def main():
         print(f'Combustível total gasto: {combustivel_total:.5f} litros')
 
         print("Combustível gasto por trecho:")
+        combustiveis = []
         for i in range(len(rota_otima) - 1):
             loja_atual = rota_otima[i]
             loja_proxima = rota_otima[i + 1]
             distancia = calcular_distancia(loja_atual, loja_proxima)
             carga_atual = capacidade_caminhao - len(loja_proxima.destinos)
             combustivel_trecho = calcular_combustivel(distancia, carga_atual)
+            combustiveis.append(combustivel_trecho)
             print(f'De loja {loja_atual.numero} para loja {loja_proxima.numero}: {combustivel_trecho:.5f} litros')
 
         end = time.time()
         print("Tempo de execução: " + str(end - start))
-        exibir_animacao(rota_otima)
+        exibir_animacao(rota_otima, combustivel_total)
 
 if __name__ == '__main__':
     main()

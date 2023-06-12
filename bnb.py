@@ -1,6 +1,7 @@
 import math
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+import numpy as np
 
 class Loja:
     def __init__(self, numero, x, y, destinos):
@@ -12,7 +13,7 @@ class Loja:
 def calcular_distancia(loja1, loja2):
     return math.sqrt((loja2.x - loja1.x) ** 2 + (loja2.y - loja1.y) ** 2)
 
-def calcular_combustivel(distancia, carga_atual):
+def calcular_combustivel(distancia, carga_atual): # calcula o combustivel gasto de um ponto A para um ponto B com base nas especificações do exercício
     rendimento_base = 10  # km/litro
     rendimento_por_produto = 0.5  # km/litro por produto
     rendimento_atual = rendimento_base - (carga_atual * rendimento_por_produto)
@@ -24,14 +25,14 @@ def calcular_lower_bound(rota_atual, lojas_restantes, capacidade_caminhao):
     carga_atual = 0
     loja_atual = rota_atual[-1]
 
-    # Calculate the lower bound based on the remaining stores and their distances
+    # Calcula o lower bound com base nas lojas que faltam e nas distancias
     for loja in lojas_restantes:
         distancia = calcular_distancia(loja_atual, loja)
         lower_bound += calcular_combustivel(distancia, carga_atual)
         carga_atual += len(loja.destinos)
 
         if carga_atual > capacidade_caminhao:
-            # If the capacity is exceeded, estimate the remaining distance based on the average distance
+            # Se a capacidade for excedida, estima a distancia restante com base a distancia média
             average_distancia = lower_bound / (len(lojas_restantes) - len(rota_atual))
             lower_bound += (len(lojas_restantes) - len(rota_atual) + 1) * average_distancia
             break
@@ -55,8 +56,6 @@ def calcular_rota_otima(lojas, capacidade_caminhao):
             if combustivel_total < menor_combustivel_total:
                 menor_combustivel_total = combustivel_total
                 rota_otima = rota_atual
-                print(f'Nova Rota ótima: {[loja.numero for loja in rota_otima]}')
-                print(menor_combustivel_total)
             return
 
         lojas_restantes.sort(key=lambda loja: calcular_lower_bound(rota_atual, lojas_restantes, capacidade_caminhao))
@@ -77,32 +76,35 @@ def calcular_rota_otima(lojas, capacidade_caminhao):
                     return
 
     backtrack_rota([lojas[0]], lojas[1:], set(), 0)
-    # rota_otima.append(lojas[0])
-    # menor_combustivel_total += calcular_combustivel(calcular_distancia(rota_otima[-2], lojas[0]), 0)
 
     return rota_otima, menor_combustivel_total
 
 
-def exibir_animacao(rota):
+def exibir_animacao(rota, combustivel):
     x = [loja.x for loja in rota]
     y = [loja.y for loja in rota]
-    numeros = [loja.numero for loja in rota]  # Store numbers
+    numeros = [loja.numero for loja in rota]
 
-    fig, ax = plt.subplots()
-    ax.plot(x, y, 'bo-')
-    ax.plot(x[0], y[0], 'go')  # Marcando a matriz (loja 0) em verde
-    ax.set(xlabel='Coordenada X', ylabel='Coordenada Y', title='Rota do caminhão')
-    ax.grid()
+    fig, (ax1, ax2) = plt.subplots(1, 2, gridspec_kw={'width_ratios': [4, 1]})
+    ax1.plot(x, y, 'bo-')
+    ax1.plot(x[0], y[0], 'go')
+    ax1.set(xlabel='Coordenada X', ylabel='Coordenada Y', title='Rota do caminhão')
+    ax1.grid()
 
-    # Annotate store numbers on the graph
     for i, num in enumerate(numeros):
-        ax.annotate(num, (x[i], y[i]), textcoords="offset points", xytext=(0,10), ha='center')
+        ax1.annotate(num, (x[i], y[i]), textcoords="offset points", xytext=(0,10), ha='center')
 
-    # Create truck marker
-    truck_marker = ax.plot([], [], 'r>', markersize=10)[0]
+    # Cria marcador do caminhão
+    truck_marker = ax1.plot([], [], 'r>', markersize=10)[0]
+
+    # Cria a barra lateral do combustível
+    ax2.set(xlim=(0, 1), ylim=(0, 200))
+    fuel_bar = ax2.barh([0], [combustivel], height=200)
+    fuel_bar_filled = ax2.barh([0], [0], height=1)
 
     def update(frame):
         truck_marker.set_data(x[frame], y[frame])
+
         return truck_marker,
 
     # Set up animation
@@ -129,7 +131,7 @@ def ler_lojas_do_arquivo(arquivo):
 
 def main():
     arquivo_lojas = 'lojas.txt'
-    capacidade_caminhao = 3
+    capacidade_caminhao = int(input())
 
     lojas = ler_lojas_do_arquivo(arquivo_lojas)
     rota_otima, combustivel_total = calcular_rota_otima(lojas, capacidade_caminhao)
@@ -147,8 +149,7 @@ def main():
             combustivel_trecho = calcular_combustivel(distancia, carga_atual)
             print(f'De loja {loja_atual.numero} para loja {loja_proxima.numero}: {combustivel_trecho:.2f} litros')
 
-        exibir_animacao(rota_otima)
+        exibir_animacao(rota_otima, combustivel_total)
 
 if __name__ == '__main__':
     main()
-
