@@ -46,14 +46,14 @@ def calcular_rota_otima(lojas, capacidade_caminhao):
     def backtrack_rota(rota_atual, lojas_restantes, cargas, combustivel_total):
         nonlocal menor_combustivel_total, rota_otima
 
-        if len(cargas) > capacidade_caminhao:
+        if len(cargas) > capacidade_caminhao: # se a capacidade foi excedida, desconnsidera a rota
             return
 
         
-        if (len(rota_atual) == len(lojas)) and len(cargas) == 0:
-            rota_atual.append(lojas[0])
+        if (len(rota_atual) == len(lojas)) and len(cargas) == 0: # confere se está na ultima loja (antes do retorno a 0) e se não tem mais cargas para entregar 
+            rota_atual.append(lojas[0]) # adiciona o retorno à loja 0 e, na linha de baixo calcula o custo desse retorno
             combustivel_total += calcular_combustivel(calcular_distancia(rota_atual[-2], lojas[0]), 0)
-            if combustivel_total < menor_combustivel_total:
+            if combustivel_total < menor_combustivel_total:  # guardas os valores referentes a rota, caso ela seja melhor que a rota ótima atualmente registrada
                 menor_combustivel_total = combustivel_total
                 rota_otima = rota_atual
             return
