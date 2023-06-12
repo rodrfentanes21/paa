@@ -64,33 +64,29 @@ def calcular_rota_otima(lojas, capacidade_caminhao): # função "core" do algori
 def exibir_animacao(rota, combustivel):
     x = [loja.x for loja in rota]
     y = [loja.y for loja in rota]
-    numeros = [loja.numero for loja in rota]
+    numeros = [loja.numero for loja in rota]  # Store numbers
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, gridspec_kw={'width_ratios': [4, 1]})
-    ax1.plot(x, y, 'bo-')
-    ax1.plot(x[0], y[0], 'go')
-    ax1.set(xlabel='Coordenada X', ylabel='Coordenada Y', title='Rota do caminhão')
-    ax1.grid()
+    fig, ax = plt.subplots()
+    ax.plot(x, y, 'bo-')
+    ax.plot(x[0], y[0], 'go')  # Marcando a matriz (loja 0) em verde
+    ax.set(xlabel='Coordenada X', ylabel='Coordenada Y', title='Rota do caminhão')
+    ax.grid()
 
+    # Annotate store numbers on the graph
     for i, num in enumerate(numeros):
-        ax1.annotate(num, (x[i], y[i]), textcoords="offset points", xytext=(0,10), ha='center')
+        ax.annotate(num, (x[i], y[i]), textcoords="offset points", xytext=(0,10), ha='center')
 
-    # Cria marcador do caminhão
-    truck_marker = ax1.plot([], [], 'r>', markersize=10)[0]
-
-    # Cria a barra lateral do combustível
-    ax2.set(xlim=(0, 1), ylim=(0, 200))
-    fuel_bar = ax2.barh([0], [combustivel], height=200)
-    fuel_bar_filled = ax2.barh([0], [0], height=1)
+    # Create truck marker
+    truck_marker = ax.plot([], [], 'r>', markersize=10)[0]
 
     def update(frame):
         truck_marker.set_data(x[frame], y[frame])
-
         return truck_marker,
 
-    # animaçao do ponteiro
+    # Set up animation
     anim = animation.FuncAnimation(fig, update, frames=len(x), interval=1000, repeat=False, blit=True)
 
+    plt.title((f'Esta rota gasta {combustivel:.5f} Litros de combustível no total'))
     plt.show()
 
 def ler_lojas_do_arquivo(arquivo):
